@@ -31,7 +31,7 @@ sub csv_line { join ",", map { '"' . esc_csv(replace('\s+', ' ', $_)) . '"' } @_
 
 my $pdf_file = $ARGV[0];
 die "Usage: <input.pdf> [output.csv]" unless $pdf_file;
-die "Input file not found: $pdf_file" unless -f $pdf_file;
+die "File not found: $pdf_file" unless -f $pdf_file;
 
 my $csv_file = $ARGV[1];
 if (!$csv_file) {
@@ -56,7 +56,7 @@ shift @lines; # remove last four CC digits
 shift @lines; # remove name
 pop @lines;   # remove empty line at the end
 
-my @transactions = map { [ unpack 'x17A12A13A58A37A11A*' ] } @lines;
+my @transactions = map { [ unpack 'x17A12A13A93A13A*' ] } @lines;
 PRINT_DEBUG \@transactions;
 
 my $year = 1900 + (localtime)[5];
@@ -69,14 +69,18 @@ my %month_map = (
 );
 
 @transactions = map {
-    $_->[4] = '-' . $_->[4] if $_->[5] eq "Af"; # distinguish debit and credit transactions
+    @$_ = map { replace('^\s+', '', $_) } @$_;         # trim leading spaces
+    $_->[3] = '-' . $_->[3] if $_->[4] eq "Af";        # distinguish debit and credit transactions
+    $_->[3] =~ tr/,/./;                                # replace decimal comma with a dot
     $_->[0] =~ s/(\d\d) (.+)/$1-$month_map{$2}-$year/; # fix the first date
     $_->[1] =~ s/(\d\d) (.+)/$1-$month_map{$2}-$year/; # fix the second date
+    pop @$_;                                           # remove last "Af/Bij" column
     $_
 } @transactions;
+unshift @transactions, [ qw(Transaction Processed Description Amount) ];
 PRINT_DEBUG \@transactions;
 
-my $csv_text = join "\n", map { csv_line(@$_) } @transactions;
+my $csv_text = join "\n", map { csv_line(@$_) } grep { $_->[0] } @transactions;
 PRINT_DEBUG $csv_text;
 
 open(my $handle, ">", $csv_file);
