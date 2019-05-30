@@ -30,7 +30,7 @@ sub gs {
 sub csv_line { join ",", map { '"' . esc_csv(replace('\s+', ' ', $_)) . '"' } @_ }
 
 my $pdf_file = $ARGV[0];
-die "Usage: <input.pdf> [output.csv]" unless $pdf_file;
+die "Usage: $0 <input.pdf> [output.csv]" unless $pdf_file;
 die "File not found: $pdf_file" unless -f $pdf_file;
 
 my $csv_file = $ARGV[1];
