@@ -59,6 +59,23 @@ pop @lines;   # remove empty line at the end
 my @transactions = map { [ unpack 'x17A12A13A58A37A11A*' ] } @lines;
 PRINT_DEBUG \@transactions;
 
+my $year = 1900 + (localtime)[5];
+$year = $1 if $pdf_file =~ m/(\d{4})-\d{2}\.pdf$/;
+
+my %month_map = (
+    jan => "01", feb => "02", mrt => "03", apr => "04",
+    mei => "05", jun => "06", jul => "07", aug => "08",
+    sep => "09", okt => "10", nov => "11", dec => "12",
+);
+
+@transactions = map {
+    $_->[4] = '-' . $_->[4] if $_->[5] eq "Af"; # distinguish debit and credit transactions
+    $_->[0] =~ s/(\d\d) (.+)/$1-$month_map{$2}-$year/; # fix the first date
+    $_->[1] =~ s/(\d\d) (.+)/$1-$month_map{$2}-$year/; # fix the second date
+    $_
+} @transactions;
+PRINT_DEBUG \@transactions;
+
 my $csv_text = join "\n", map { csv_line(@$_) } @transactions;
 PRINT_DEBUG $csv_text;
 
